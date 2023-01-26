@@ -1,15 +1,13 @@
-import { Crossword, WordNode, Word, ORIENTATION, Clue } from "./grid.interface"
-
-const grandDictionary = require('./grandDictionary.json');
+import { Crossword, WordNode, Word, ORIENTATION, Clue } from "./grid.interface";
+var grandDictionary = require('./grandDictionary.json');
 
 // The following variables should only be changed by an enlightened aesthete.
 const themedSeed = ['tomato', 'plantain', 'apple']
 const minimumWordLength = 3;
 const maximumWordLength = 13;
-const minimumWordCount = 25; // The best crosswords have upwards of 60 words in a 15x15. This is introduced purely for ease of testing.
+const minimumWordCount = 4; // The best crosswords have upwards of 60 words in a 15x15. This is introduced purely for ease of testing.
 const puzzleHeight = 15;
 const puzzleLength = 15;
-
 
 const allowedIterations = 100000; // This prevents us being stuck due to lack of backtracking or extraordinarily bad seeds. May be unused.
 
@@ -51,7 +49,6 @@ function displayCrossword(crossWord: Crossword): void {
     }
 }
 
-// function for generating the initial word layout
 function generateWordLayout(): Crossword {
     // invoke the blank grid generator
     let crossWord = makeBlankGrid();
@@ -139,7 +136,6 @@ function checkIfOverwriting(crossWord: Crossword, word: string, xStartIndex: num
     return false;
 }
 
-// write a function that sets the adjacent property of all nodes adjacent to the current node to true
 function setAdjacentProperty(crossWord: Crossword, node: WordNode, xIndex: number, yIndex: number) {
     // if the xIndex is less than 0, don't try to set the adjacent property of the nodes that are out of bounds
     if (xIndex - 1 >= 0) {
@@ -223,6 +219,8 @@ function setStartAndEndOfWordProperties(crossWord: Crossword) {
 // If such a word is found, write all relevant properties. write the foundWord to the word object. Write the word to the crossword object. Check if we have reached the minimum number of words.
 // return the updated crossword.
 
+
+// This function is literally hangman :)
 function fillFromDictionary(crossWord: Crossword, wordNode: WordNode, xIndex: number, yIndex: number): Crossword{
     // if the wordNode is fully determined, return the crossword unchanged
     if (wordNode.fullyDetermined) {
@@ -397,8 +395,6 @@ function addDictionaryWords(crossWord: Crossword): Crossword {
     return crossWord;
 }
 
-let step1 = generateWordLayout();
-let step2 = addDictionaryWords(step1);
-let step3 = displayCrossword(step2);
-console.log(step3);
-// gives error due to json file whitespace issue.
+// Generate a blank grid and print it to the console
+let blankGrid = makeBlankGrid(10);
+console.log(blankGrid);
