@@ -2,10 +2,10 @@ import { Crossword, WordNode, Word, ORIENTATION, Clue } from "./grid.interface";
 var grandDictionary = require('./grandDictionary.json');
 
 // The following variables should only be changed by an enlightened aesthete.
-const themedSeed = ['tomato', 'plantain', 'apple']
+const themedSeed = ['plum', 'pear', 'grape', 'pineapple', 'cherry', 'strawberry'];  // apple
 const minimumWordLength = 3;
 const maximumWordLength = 13;
-const minimumWordCount = 4; // The best crosswords have upwards of 60 words in a 15x15. This is introduced purely for ease of testing.
+const minimumWordCount = 5; // The best crosswords have upwards of 60 words in a 15x15. This is introduced purely for ease of testing.
 const puzzleHeight = 15;
 const puzzleLength = 15;
 
@@ -15,7 +15,7 @@ const allowedIterations = 100000; // This prevents us being stuck due to lack of
 
 function makeBlankGrid(height = puzzleHeight, length = puzzleLength): Crossword {
     let multiArray = new Array(length);
-    let emptyNode = { character: '-', correctAnswerCharacter: '', isBlackedOut: false, isFilled: false, isStartOfWord: false, isStartOfHorizontalWord: false, isStartOfVerticalWord: false, isPartOfHorizontalWord: false, isPartOfVerticalWord: false, isEndOfHorizontalWord: false, isEndOfVerticalWord: false, startsClue: -1, adjacent: false, fullyDetermined: false} as WordNode;
+    let emptyNode = { character: '-', correctAnswerCharacter: '-', isBlackedOut: false, isFilled: false, isStartOfWord: false, isStartOfHorizontalWord: false, isStartOfVerticalWord: false, isPartOfHorizontalWord: false, isPartOfVerticalWord: false, isEndOfHorizontalWord: false, isEndOfVerticalWord: false, startsClue: -1, adjacent: false, fullyDetermined: false} as WordNode;
     for (let i = 0; i < multiArray.length; i++) {
         multiArray[i] = new Array(height);
     }
@@ -43,97 +43,94 @@ function displayCrossword(crossWord: Crossword): void {
         let row = '';
         // console.log('row: ', nodeRow);
         for(let j = 0; j < crossWord.height; j++) {
-            row += crossWord.grid[j][i].character;
+            row += crossWord.grid[j][i].correctAnswerCharacter;
         }
         console.log(row);
     }
 }
 
-function generateWordLayout(): Crossword {
-    // invoke the blank grid generator
-    let crossWord = makeBlankGrid();
-    // loop through each word in themedSeed
+function generateThemedLayout(themedSeed: string[], blankGrid: Crossword): Crossword {
+    let themedCrossword = blankGrid;
+    // loop through each word in the seed
     for(let i = 0; i < themedSeed.length; i++) {
-        let currentWord = themedSeed[i];
-        // generate horizontal or vertical orientation
+        //choose a random orientation for the word
         let orientation = Math.floor(Math.random() * 2) === 0 ? ORIENTATION.HORIZONTAL : ORIENTATION.VERTICAL;
-        // generate a random starting point
-        let xStartIndex = getStartXIndex(currentWord, crossWord.height, crossWord.length, orientation);
-        let yStartIndex = getStartYIndex(currentWord, crossWord.height, crossWord.length, orientation);
-        // check if any of the characters in the currentWord will overwrite another WordNode in crossWord.grid with adjacent: true or with a different letter than the one in the currentWord
-        let isOverwriting = checkIfOverwriting(crossWord, currentWord, xStartIndex, yStartIndex, orientation);
-        // if the word is overwriting, decrement i and try again
-        if (isOverwriting) {
+        //choose a random starting point for the word and make sure it doesn't overflow the grid in either direction if it is placed horizontally or vertically
+        // case 1: horizontal
+        let xStartIndex = 0;
+        let yStartIndex = 0;
+        if (orientation === ORIENTATION.HORIZONTAL) {
+            xStartIndex = Math.floor(Math.random() * (themedCrossword.length - themedSeed[i].length));
+            yStartIndex = Math.floor(Math.random() * themedCrossword.height);
+        }
+        // case 2: vertical
+        if (orientation === ORIENTATION.VERTICAL) {
+            xStartIndex = Math.floor(Math.random() * themedCrossword.length);
+            yStartIndex = Math.floor(Math.random() * (themedCrossword.height - themedSeed[i].length));
+        }
+        console.log('xStartIndex: ', xStartIndex);
+        console.log('yStartIndex: ', yStartIndex);
+        
+        //TODO 
+        // this may be redundant to checkIfOverwriting?
+        //make sure the starting point is not overwriting any existing characters in the proposed nodes. If it is, decrement i and try again.
+        if (checkIfOverwriting(themedCrossword, themedSeed[i], xStartIndex, yStartIndex, orientation)) {
+            console.log(`is overwriting ${themedSeed[i]}, decrementing i`);
             i--;
             continue;
         }
-        // generate the end index
-        let xEndIndex = xStartIndex + currentWord.length;
-        let yEndIndex = yStartIndex + currentWord.length;
-        // if the word goes out of bounds, adjust the start index
-        // add the word to the crossword
-        let wordObj = { 
-            orientation: orientation, 
-            xStartIndex: xStartIndex, 
-            yStartIndex: yStartIndex, 
-            xEndIndex: xEndIndex, 
-            yEndIndex: yEndIndex, 
-            length: currentWord.length, 
-            characters: currentWord
-        } as Word;
-        crossWord.words.push(wordObj);
-        // add each letter of the word to the corresponding grid space
-        for(let j = 0; j < currentWord.length; j++) {
-            let node = { character: currentWord[j], correctAnswerCharacter: currentWord[j], isBlackedOut: false, isFilled: true, isStartOfWord: false} as WordNode;
-            if (orientation === ORIENTATION.HORIZONTAL) {
-                crossWord.grid[xStartIndex + j][yStartIndex] = node;
-                // set the isPartOfHorizontalWord property of the node to true
-                crossWord.grid[xStartIndex + j][yStartIndex].isPartOfHorizontalWord = true;
-                setAdjacentProperty(crossWord, node, xStartIndex + j, yStartIndex);
+        // This loop hangs forever if the seed is too long for the grid. (AS WRITTEN) :)
+
+        //loop through each letter in the word
+        for(let j = 0; j < themedSeed[i].length; j++) {
+            //set the character of the node at the current index to the current letter in the word
+            console.log('setting character to: ', themedSeed[i][j], 'at index: ', i, j);
+            // create a variable for the currently selected letter
+            let currentLetter = themedSeed[i][j];
+            console.log('currentLetter: ', currentLetter);
+            if (orientation === ORIENTATION.HORIZONTAL) {                
+                themedCrossword.grid[xStartIndex + j][yStartIndex] = {
+                    ...themedCrossword.grid[xStartIndex + j][yStartIndex],
+                    isFilled: true,
+                    character: currentLetter,
+                    correctAnswerCharacter: currentLetter,
+                    isStartOfHorizontalWord: j === 0,
+                    isEndOfHorizontalWord: j === themedSeed[i].length - 1,
+                    isPartOfHorizontalWord: true,
+                };
             } else {
-                crossWord.grid[xStartIndex][yStartIndex + j] = node;
-                // set the isPartOfVerticalWord property of the node to true
-                crossWord.grid[xStartIndex][yStartIndex + j].isPartOfVerticalWord = true;
-                setAdjacentProperty(crossWord, node, xStartIndex, yStartIndex + j);
+                themedCrossword.grid[xStartIndex][yStartIndex + j] = {
+                    ...themedCrossword.grid[xStartIndex][yStartIndex + j],
+                    isFilled: true,
+                    character: currentLetter,
+                    correctAnswerCharacter: currentLetter,
+                    isStartOfVerticalWord: j === 0,
+                    isEndOfVerticalWord: j === themedSeed[i].length - 1,
+                    isPartOfVerticalWord: true,
+                };
             }
+            setAdjacentProperty(themedCrossword, themedCrossword.grid[i][j], xStartIndex, yStartIndex);
+
         }
     }
-return crossWord;
+    return themedCrossword;
 }
 
 function checkIfOverwriting(crossWord: Crossword, word: string, xStartIndex: number, yStartIndex: number, orientation: ORIENTATION): boolean {
-    // loop through each letter in the word
-    for(let i = 0; i < word.length; i++) {
-        // if the orientation is horizontal, check the xIndex
+    let result = false;
+    //loop through each letter in the word and check if the node.adjacent property is true or if the node.isFilled property is true or if the node.character is not equal to the current letter in the word
+    for(let j = 0; j < word.length; j++) {
         if (orientation === ORIENTATION.HORIZONTAL) {
-            // if the xIndex is out of bounds, return true
-            if (xStartIndex + i >= crossWord.length) {
-                return true;
-            }
-            // if the node at the xIndex is adjacent, return true
-            if (crossWord.grid[xStartIndex + i][yStartIndex].adjacent) {
-                return true;
-            }
-            // if the node at the xIndex has a different character than the current letter in the word, return true
-            if (crossWord.grid[xStartIndex + i][yStartIndex].character !== word[i]) {
+            if (crossWord.grid[xStartIndex + j][yStartIndex].adjacent || crossWord.grid[xStartIndex + j][yStartIndex].isFilled ) {
                 return true;
             }
         } else {
-            // if the yIndex is out of bounds, return true
-            if (yStartIndex + i >= crossWord.height) {
-                return true;
-            }
-            // if the node at the yIndex is adjacent, return true
-            if (crossWord.grid[xStartIndex][yStartIndex + i].adjacent) {
-                return true;
-            }
-            // if the node at the yIndex has a different character than the current letter in the word, return true
-            if (crossWord.grid[xStartIndex][yStartIndex + i].character !== word[i]) {
+            if (crossWord.grid[xStartIndex][yStartIndex + j].adjacent || crossWord.grid[xStartIndex][yStartIndex + j].isFilled) {
                 return true;
             }
         }
     }
-    return false;
+    return result;
 }
 
 function setAdjacentProperty(crossWord: Crossword, node: WordNode, xIndex: number, yIndex: number) {
@@ -218,7 +215,6 @@ function setStartAndEndOfWordProperties(crossWord: Crossword) {
 // Search grandDictionary.txt for any such matching word. Return the first one found. If none is found, return the crossword unchanged.
 // If such a word is found, write all relevant properties. write the foundWord to the word object. Write the word to the crossword object. Check if we have reached the minimum number of words.
 // return the updated crossword.
-
 
 // This function is literally hangman :)
 function fillFromDictionary(crossWord: Crossword, wordNode: WordNode, xIndex: number, yIndex: number): Crossword{
@@ -395,6 +391,8 @@ function addDictionaryWords(crossWord: Crossword): Crossword {
     return crossWord;
 }
 
-// Generate a blank grid and print it to the console
-let blankGrid = makeBlankGrid(10);
-console.log(blankGrid);
+// make a blank grid and print it to the console
+let blankGrid = makeBlankGrid(13, 13);
+displayCrossword(blankGrid);
+let step2 = generateThemedLayout(themedSeed, blankGrid);
+displayCrossword(step2);
