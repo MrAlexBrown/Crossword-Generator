@@ -1,0 +1,35 @@
+Based on the current methods for creating dense crosswords, 
+There is no best solution for all dictionaries.
+Our current dictionary will be between 200,000 and 300,000 words.
+Our aesthetic requirements on the total word count and character density are permissive.
+For a dictionary of this size and generous constraints,
+a brute force approach is effective. Given a small initial themed word bank,
+we can reliably generate crosswords with 30 or more words.
+The default difficulty of each generated crossword will be quite high.
+
+We will not be backtracking due to the size of our dictionary and our permissive parameters.
+For very restrictive/premium/published puzzles this would be more time-effective.
+
+The difficulty can be adjusted by:
+    1. Increasing the number of themed words in the initial word bank. (Less difficult)
+    This decreases the initial difficulty and increases generation constraint and therefore
+    character density. This will make generating crosswords more difficult.
+    2. Increasing word length. (Less difficult) [Not yet implemented]
+    This causes subsequent clues to be easier to solve.
+    3. Increasing the number of words in the crossword. (More satisfying)
+    Increasing the total number of words increases the successes the player experiences.
+    Larger word counts also typically make later clues easier to solve.
+
+isPartOfHorizontalWord and isPartOfVerticalWord are properties created to determine whether or not it is valid to start a new word.
+If an index is part of a horizontal or vertical word, another word cannot be placed there.
+
+//!a function to generate clues
+// Not needed? The crossword object has a words and clues property. 
+
+//!check for duplicate words function?
+// Our dictionary is large enough this should not be required(?)
+
+//!PROBLEM: For our dictionary, clues are written manually after generation by an aesthete! These clues may even reference the puzzle they originally appeared in.
+// This is a problem for the dictionary team. The form of the offending clues commonly includes references such as:
+// "52-across" (ASHOTIN), "10-down" (ENDNOTES), "starred clues" (BIRDS), "italicized clues" (HANDM), "clues" (CAPITALLETTER), "unclued answers" (DOWNCOMFORTERS), "asterisked clue" (NBA), etc. 
+// For crosswords of especially high aesthetic scoring, manual review and clue writing may be valuable.
